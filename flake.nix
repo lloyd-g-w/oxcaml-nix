@@ -38,8 +38,19 @@
               opam-repository
             ];
           } {
-            ocaml-variants = "5.2.0+ox";
-            dune = "3.22.2+ox";
+            ocaml-variants = "*";
+            dune = "*";
+
+            tsdl = "*";
+            ctypes = "*";
+
+            ocamlformat = "*";
+            merlin = "*";
+            ocaml-lsp-server = "*";
+            utop = "*";
+            parallel = "*";
+            core_unix = "*";
+            odoc = "*";
           };
 
         scope = baseScope.overrideScope (
