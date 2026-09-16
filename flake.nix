@@ -30,6 +30,26 @@
         pkgs =
           opam-nix.inputs.nixpkgs.legacyPackages.${system};
 
+        # The oxcaml meta-package has:
+        #
+        #   dev-repo: "...#main"
+        #
+        # opam-nix refuses floating git revisions in pure evaluation.
+        # Pin it to the commit corresponding to oxcaml 5.2.0minus39.
+        patchedOxcamlOpamRepository = pkgs.runCommand "oxcaml-opam-repository-patched" {} ''
+          mkdir -p "$out"
+          cp -R ${oxcaml-opam-repository}/. "$out/"
+
+          chmod u+w \
+            "$out/packages/oxcaml/oxcaml.latest/opam"
+
+          substituteInPlace \
+            "$out/packages/oxcaml/oxcaml.latest/opam" \
+            --replace-fail \
+              'git+https://github.com/oxcaml/oxcaml.git#main' \
+              'git+https://github.com/oxcaml/oxcaml.git#2515546fea38e21e8143cc41db663bd56efc8d06'
+        '';
+
         patchScope = scope:
           scope.overrideScope (
             final: prev: {
@@ -54,11 +74,6 @@
           );
 
         oxcamlPackages = names: let
-          opamNames =
-            builtins.filter
-            (name: name != "oxcaml")
-            names;
-
           query =
             {
               ocaml-variants = "5.2.0+ox";
@@ -69,13 +84,13 @@
                 inherit name;
                 value = "*";
               })
-              opamNames
+              names
             );
 
           scope = patchScope (
             on.queryToScope {
               repos = [
-                oxcaml-opam-repository
+                patchedOxcamlOpamRepository
                 opam-repository
               ];
             }
@@ -101,7 +116,6 @@
 
         packages = {
           inherit oxcaml;
-
           default = oxcaml;
         };
       }
