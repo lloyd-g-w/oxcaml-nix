@@ -45,11 +45,20 @@
         scope = baseScope.overrideScope (
           final: prev: {
             "oxcaml-compiler" = prev."oxcaml-compiler".overrideAttrs (old: {
-              preBuild =
-                (old.preBuild or "")
+              nativeBuildInputs =
+                (old.nativeBuildInputs or [])
+                ++ [
+                  pkgs.autoconf
+                  pkgs.rsync
+                ];
+
+              postPatch =
+                (old.postPatch or "")
                 + ''
-                  substituteInPlace Makefile.common-ox \
-                    --replace-fail "/usr/bin/env" "${pkgs.coreutils}/bin/env"
+                  substituteInPlace Makefile Makefile.ox \
+                    --replace-fail \
+                      "SHELL = /usr/bin/env bash" \
+                      "SHELL = ${pkgs.bash}/bin/bash"
                 '';
             });
           }
@@ -59,7 +68,7 @@
 
         packages = {
           dune = scope.dune;
-          default = scope.dune;
+          default = scope.oxcaml;
         };
       }
     );
