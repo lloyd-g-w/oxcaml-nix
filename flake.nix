@@ -54,6 +54,11 @@
           );
 
         oxcamlPackages = names: let
+          opamNames =
+            builtins.filter
+            (name: name != "oxcaml")
+            names;
+
           query =
             {
               ocaml-variants = "5.2.0+ox";
@@ -64,7 +69,7 @@
                 inherit name;
                 value = "*";
               })
-              names
+              opamNames
             );
 
           scope = patchScope (
@@ -84,9 +89,11 @@
             else scope.${name})
           names;
 
-        oxcaml = builtins.head (oxcamlPackages [
-          "oxcaml"
-        ]);
+        oxcaml = builtins.head (
+          oxcamlPackages [
+            "oxcaml"
+          ]
+        );
       in {
         lib = {
           inherit oxcamlPackages;
@@ -94,6 +101,7 @@
 
         packages = {
           inherit oxcaml;
+
           default = oxcaml;
         };
       }
