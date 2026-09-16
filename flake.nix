@@ -67,8 +67,11 @@
         legacyPackages = scope;
 
         packages = {
+          oxcaml = scope."oxcaml-compiler";
+          ocaml = scope."oxcaml-compiler";
           dune = scope.dune;
-          default = scope.oxcaml;
+
+          default = scope.ocaml;
         };
       }
     );
