@@ -39,6 +39,7 @@
             ];
           } {
             ocaml-variants = "*";
+            oxcaml = "*";
             dune = "*";
 
             tsdl = "*";
