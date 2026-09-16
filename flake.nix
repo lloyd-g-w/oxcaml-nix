@@ -28,7 +28,10 @@
       system: let
         on = opam-nix.lib.${system};
 
-        scope =
+        pkgs =
+          opam-nix.inputs.nixpkgs.legacyPackages.${system};
+
+        baseScope =
           on.queryToScope {
             repos = [
               oxcaml-opam-repository
@@ -38,13 +41,26 @@
             ocaml-variants = "5.2.0+ox";
             dune = "3.22.2+ox";
           };
+
+        scope = baseScope.overrideScope (
+          final: prev: {
+            "oxcaml-compiler" = prev."oxcaml-compiler".overrideAttrs (old: {
+              preBuild =
+                (old.preBuild or "")
+                + ''
+                  substituteInPlace Makefile.common-ox \
+                    --replace-fail "/usr/bin/env" "${pkgs.coreutils}/bin/env"
+                '';
+            });
+          }
+        );
       in {
+        legacyPackages = scope;
+
         packages = {
           dune = scope.dune;
           default = scope.dune;
         };
-
-        legacyPackages = scope;
       }
     );
 }
