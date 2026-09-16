@@ -29,16 +29,21 @@
         on = opam-nix.lib.${system};
 
         scope =
-          on.buildOpamProject' {
+          on.queryToScope {
             repos = [
               oxcaml-opam-repository
               opam-repository
             ];
-          } "oxcaml"
-          ./. {
+          } {
             ocaml-variants = "5.2.0+ox";
+            dune = "3.22.2+ox";
           };
       in {
+        packages = {
+          dune = scope.dune;
+          default = scope.dune;
+        };
+
         legacyPackages = scope;
       }
     );
