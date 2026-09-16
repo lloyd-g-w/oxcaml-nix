@@ -17,7 +17,6 @@
   };
 
   outputs = {
-    self,
     opam-nix,
     flake-utils,
     oxcaml-opam-repository,
@@ -31,60 +30,83 @@
         pkgs =
           opam-nix.inputs.nixpkgs.legacyPackages.${system};
 
-        baseScope =
-          on.queryToScope {
-            repos = [
-              oxcaml-opam-repository
-              opam-repository
-            ];
-          } {
-            ocaml-variants = "5.2.0+ox";
-            dune = "*";
+        patchScope = scope:
+          scope.overrideScope (
+            final: prev: {
+              "oxcaml-compiler" = prev."oxcaml-compiler".overrideAttrs (old: {
+                nativeBuildInputs =
+                  (old.nativeBuildInputs or [])
+                  ++ [
+                    pkgs.autoconf
+                    pkgs.rsync
+                  ];
 
-            tsdl = "*";
-            ctypes = "*";
+                postPatch =
+                  (old.postPatch or "")
+                  + ''
+                    substituteInPlace Makefile Makefile.ox \
+                      --replace-fail \
+                        "SHELL = /usr/bin/env bash" \
+                        "SHELL = ${pkgs.bash}/bin/bash"
+                  '';
+              });
+            }
+          );
 
-            ocamlformat = "*";
-            merlin = "*";
-            ocaml-lsp-server = "*";
-            utop = "*";
-            parallel = "*";
-            core_unix = "*";
-            odoc = "*";
-          };
+        oxcamlPackages = names: let
+          # "oxcaml" is our name for the actual compiler package.
+          # Don't ask opam for the upstream `oxcaml` meta-package.
+          opamNames =
+            builtins.filter
+            (name: name != "oxcaml")
+            names;
 
-        scope = baseScope.overrideScope (
-          final: prev: {
-            "oxcaml-compiler" = prev."oxcaml-compiler".overrideAttrs (old: {
-              nativeBuildInputs =
-                (old.nativeBuildInputs or [])
-                ++ [
-                  pkgs.autoconf
-                  pkgs.rsync
-                ];
+          query =
+            {
+              ocaml-variants = "5.2.0+ox";
+            }
+            // builtins.listToAttrs (
+              map
+              (name: {
+                inherit name;
+                value = "*";
+              })
+              opamNames
+            );
 
-              postPatch =
-                (old.postPatch or "")
-                + ''
-                  substituteInPlace Makefile Makefile.ox \
-                    --replace-fail \
-                      "SHELL = /usr/bin/env bash" \
-                      "SHELL = ${pkgs.bash}/bin/bash"
-                '';
-            });
-          }
-        );
+          scope = patchScope (
+            on.queryToScope {
+              repos = [
+                oxcaml-opam-repository
+                opam-repository
+              ];
+            }
+            query
+          );
+        in
+          builtins.listToAttrs (
+            map
+            (name: {
+              inherit name;
+
+              value =
+                if name == "oxcaml"
+                then scope."oxcaml-compiler"
+                else scope.${name};
+            })
+            names
+          );
+
+        compiler =
+          (oxcamlPackages ["oxcaml"]).oxcaml;
       in {
-        legacyPackages = scope;
+        lib = {
+          inherit oxcamlPackages;
+        };
 
         packages = {
-          oxcaml = scope.oxcaml;
-          dune = scope.dune;
-          tsdl = scope.tsdl;
-          ctypes = scope.ctypes;
-          ctypes-foreign = scope.ctypes-foreign;
-          odoc = scope.odoc;
-          default = scope.oxcaml;
+          oxcaml = compiler;
+          default = compiler;
         };
       }
     );
