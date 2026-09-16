@@ -38,8 +38,7 @@
               opam-repository
             ];
           } {
-            ocaml-variants = "*";
-            oxcaml = "*";
+            ocaml-variants = "5.2.0+ox";
             dune = "*";
 
             tsdl = "*";
