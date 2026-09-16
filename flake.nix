@@ -69,7 +69,11 @@
         packages = {
           oxcaml = scope.oxcaml;
           dune = scope.dune;
-          default = scope.ocaml;
+          tsdl = scope.tsdl;
+          ctypes = scope.ctypes;
+          ctypes-foreign = scope.ctypes-foreign;
+          odoc = scope.odoc;
+          default = scope.oxcaml;
         };
       }
     );
