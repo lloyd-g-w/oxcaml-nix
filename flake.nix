@@ -54,13 +54,6 @@
           );
 
         oxcamlPackages = names: let
-          # "oxcaml" is our name for the actual compiler package.
-          # Don't ask opam for the upstream `oxcaml` meta-package.
-          opamNames =
-            builtins.filter
-            (name: name != "oxcaml")
-            names;
-
           query =
             {
               ocaml-variants = "5.2.0+ox";
@@ -71,7 +64,7 @@
                 inherit name;
                 value = "*";
               })
-              opamNames
+              names
             );
 
           scope = patchScope (
@@ -84,29 +77,24 @@
             query
           );
         in
-          builtins.listToAttrs (
-            map
-            (name: {
-              inherit name;
+          map
+          (name:
+            if name == "oxcaml"
+            then scope."oxcaml-compiler"
+            else scope.${name})
+          names;
 
-              value =
-                if name == "oxcaml"
-                then scope."oxcaml-compiler"
-                else scope.${name};
-            })
-            names
-          );
-
-        compiler =
-          (oxcamlPackages ["oxcaml"]).oxcaml;
+        oxcaml = builtins.head (oxcamlPackages [
+          "oxcaml"
+        ]);
       in {
         lib = {
           inherit oxcamlPackages;
         };
 
         packages = {
-          oxcaml = compiler;
-          default = compiler;
+          inherit oxcaml;
+          default = oxcaml;
         };
       }
     );
